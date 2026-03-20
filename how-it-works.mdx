@@ -1,0 +1,78 @@
+---
+title: How It Works
+description: The technical architecture behind Patly
+---
+
+## Overview
+
+Patly uses Gnosis Safe's **Module system** combined with Polymarket's **gasless Builder relayer** to redeem your positions without ever holding your private key.
+
+## The Two Parts
+
+### 1. One-time Setup — Safe Module
+
+Your Polymarket wallet is a [Gnosis Safe](https://safe.global). Gnosis Safe supports **modules** — external addresses that can execute transactions on behalf of the Safe, within strict limits.
+
+When you call `enableModule(patly_wallet)` on your Safe, you're granting Patly's service wallet the ability to call `execTransactionFromModule()` on your Safe. That's it. Patly can only do what you'd explicitly call — in this case, `redeemPositions()` on the Polymarket CTF contract.
+
+```
+Your Safe
+└── Modules: [0xPatlyWallet]   ← you added this once
+```
+
+You can revoke this at any time by calling `disableModule()`.
+
+### 2. Per-Call — Gasless Redeem
+
+When you call `POST /redeem`, Patly:
+
+1. Fetches the `conditionId` for your market slug from Polymarket's API
+2. Verifies the market is resolved on-chain (`payoutDenominator > 0`)
+3. Encodes `redeemPositions()` calldata targeting the CTF contract
+4. Wraps it in `execTransactionFromModule()` — targeting your Safe
+5. Submits via Polymarket's **gasless Builder relayer** — no POL needed
+6. Your Safe executes the redeem, USDC lands in your wallet
+
+```
+POST /redeem
+     ↓
+Patly encodes redeemPositions() calldata
+     ↓
+Patly wraps in execTransactionFromModule(your_safe)
+     ↓
+Polymarket relayer submits gaslessly (Builder keys)
+     ↓
+Your Safe executes → CTF burns winning tokens → USDC to your wallet
+```
+
+## Payment — x402
+
+Each redeem costs **$0.05 USDC**, collected via [x402](https://x402.org) — an open HTTP payment protocol built on EIP-3009.
+
+When you call `POST /redeem` without payment, the server returns **HTTP 402** with payment instructions. The Patly library handles this automatically — it signs a USDC `transferWithAuthorization` and retries the request. No manual steps.
+
+```
+POST /redeem  →  402 Payment Required
+     ↓
+Patly library signs USDC payment (EIP-3009)
+     ↓
+POST /redeem + X-PAYMENT header  →  200 OK
+```
+
+## Security Properties
+
+| Property | Detail |
+|---|---|
+| **No PK storage** | Patly never stores your private key |
+| **Module scope** | Patly can only call `redeemPositions()` — cannot move USDC |
+| **Revocable** | Call `disableModule()` on your Safe anytime to revoke |
+| **Transparent** | Every tx is visible on Polygonscan |
+| **Gasless** | Polymarket's Builder relayer pays gas fees |
+
+## Contract Addresses
+
+| Contract | Address |
+|---|---|
+| Polymarket CTF | `0x4D97DCd97eC945f40cF65F87097ACe5EA0476045` |
+| USDC.e (Polygon) | `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` |
+| Gnosis Safe Factory | `0xaacFeEa03eb1561C4e67d661e40682Bd20E3541b` |
