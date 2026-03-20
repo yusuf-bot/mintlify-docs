@@ -1,0 +1,50 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": ":Patly",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#d0ff4f",
+    "light": "#d0ff4f",
+    "dark": "#d0ff4f",
+    "background": {
+      "dark": "#080808"
+    }
+  },
+  "topbarLinks": [
+    { "name": "Dashboard", "url": "https://patly.online" }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "https://patly.online"
+  },
+  "tabs": [
+    { "name": "API Reference", "url": "api-reference" }
+  ],
+  "anchors": [
+    { "name": "Dashboard", "icon": "gauge", "url": "https://patly.online" },
+    { "name": "GitHub",    "icon": "github", "url": "https://github.com/your-username/patly" }
+  ],
+  "navigation": [
+    {
+      "group": "Get Started",
+      "pages": ["introduction", "quickstart", "how-it-works"]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/register",
+        "api-reference/status",
+        "api-reference/redeem",
+        "api-reference/positions",
+        "api-reference/delete"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/your-username/patly"
+  }
+}
