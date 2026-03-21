@@ -1,270 +1,163 @@
 ---
-title: Register
-description: Register your Polymarket wallet and receive an API key
-api: POST https://api.patly.online/register
+title: API Reference
+description: Full Patly API documentation
 ---
 
-## Register
+## Base URL
 
-Register your Polymarket Safe wallet address. Returns an API key used to authenticate all future requests. Free — no payment required.
+```
+http://patly.duckdns.org
+```
+
+---
+
+## POST /register
+
+Register your Polymarket wallet and receive an API key. **Free.**
 
 ### Body
 
-<ParamField body="wallet" type="string" required>
-  Your Polymarket wallet address (your Safe address, e.g. `0xb1Cb60...`)
-</ParamField>
+| Field | Type | Description |
+|---|---|---|
+| `wallet` | string | Your Polymarket wallet address (`0x...`) |
 
 ### Response
 
-<ResponseField name="api_key" type="string">
-  Your API key. Store this securely — it authenticates all requests.
-</ResponseField>
-
-<ResponseField name="wallet" type="string">
-  Your registered wallet address.
-</ResponseField>
-
-<ResponseField name="next" type="string">
-  Next step — enable the Patly module.
-</ResponseField>
-
-<RequestExample>
-```bash cURL
-curl -X POST https://api.patly.online/register \
-  -H "Content-Type: application/json" \
-  -d '{"wallet": "0xYOUR_WALLET_ADDRESS"}'
-```
-
-```python Python
-from patly import Patly
-# Registration happens automatically on first use
-# or via the dashboard at patly.online
-```
-</RequestExample>
-
-<ResponseExample>
-```json 200
+```json
 {
-  "api_key": "S-s4H6krlSRP62MLy...",
-  "wallet": "0xb1cb60c750eeea1830773825fe85c419f44c544d",
-  "next": "Enable module: call enableModule(0xPATLY_WALLET) on your Polymarket Safe"
+  "api_key": "vRkrRS5q...",
+  "wallet":  "0xb1cb60...",
+  "message": "Save your API key — it won't be shown again."
 }
 ```
 
-```json 409
-{
-  "detail": "Wallet already registered"
-}
-```
-</ResponseExample>
+**Errors:** `400` invalid address · `409` already registered
 
 ---
 
-# Check Status
+## GET /status
 
-<api>GET https://api.patly.online/status</api>
-
-Check whether the Patly module is enabled on your Safe.
+Your account status and redeem stats. **Requires auth.**
 
 ### Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your Patly API key.
-</ParamField>
+| Header | Description |
+|---|---|
+| `x-api-key` | Your Patly API key |
 
-<RequestExample>
-```bash cURL
-curl https://api.patly.online/status \
-  -H "x-api-key: YOUR_API_KEY"
-```
-</RequestExample>
+### Response
 
-<ResponseExample>
-```json 200 — Module enabled
+```json
 {
-  "wallet": "0xb1cb60...",
-  "module_enabled": true,
-  "module_wallet": "0xPATLY_MODULE_WALLET",
-  "ready": true,
-  "message": "✅ Module enabled — ready to redeem"
+  "wallet":   "0xb1cb60...",
+  "redeemed": 14,
+  "pending":  0,
+  "failed":   0
 }
 ```
-
-```json 200 — Module not enabled
-{
-  "wallet": "0xb1cb60...",
-  "module_enabled": false,
-  "module_wallet": "0xPATLY_MODULE_WALLET",
-  "ready": false,
-  "message": "⚠️  Enable module: call enableModule(0x...) on your Safe"
-}
-```
-</ResponseExample>
 
 ---
 
-# Redeem
+## POST /redeem
 
-<api>POST https://api.patly.online/redeem</api>
+Relay a signed redeem transaction. **Costs $0.01 USDC via x402.**
 
-Redeem a winning Polymarket position. Costs **$0.05 USDC** per call via x402 — handled automatically by the Patly Python library.
-
-<Note>
-This endpoint returns **HTTP 402** on the first call with payment instructions. The Patly library handles this automatically. If calling manually, see [x402 buyer docs](https://x402.org/docs/buyers).
-</Note>
+The Patly library handles signing and payment automatically. If calling manually, see the x402 protocol docs.
 
 ### Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your Patly API key.
-</ParamField>
-
-<ParamField header="X-PAYMENT" type="string">
-  x402 payment signature (handled automatically by the Patly library).
-</ParamField>
+| Header | Description |
+|---|---|
+| `x-api-key` | Your Patly API key |
+| `X-PAYMENT` | x402 payment signature (handled by Patly library) |
 
 ### Body
 
-<ParamField body="slug" type="string" required>
-  The market slug, e.g. `btc-updown-15m-1773960300`
-</ParamField>
+| Field | Type | Description |
+|---|---|---|
+| `signed_tx` | object | Safe transaction signed locally by user's PK |
+| `slug` | string | Market slug e.g. `btc-updown-15m-1234567890` |
+| `won_side` | string | `"YES"` or `"NO"` |
 
-<ParamField body="won_side" type="string" required>
-  `"YES"` or `"NO"` — which side you won.
-</ParamField>
+<Note>
+The `signed_tx` is built and signed by the Patly library on the user's machine. The private key is never transmitted — only the cryptographic signature is included.
+</Note>
 
-<RequestExample>
-```python Patly Library (recommended)
-from patly import Patly
+### Response
 
-p = Patly(api_key="YOUR_KEY", pk="YOUR_PK")
-result = p.redeem("btc-updown-15m-1773960300", "YES")
-print(result["tx_hash"])
-```
-
-```bash cURL (manual x402)
-# First call returns 402 with payment instructions
-curl -X POST https://api.patly.online/redeem \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -H "X-PAYMENT: BASE64_PAYMENT_PAYLOAD" \
-  -d '{"slug": "btc-updown-15m-1773960300", "won_side": "YES"}'
-```
-</RequestExample>
-
-<ResponseExample>
-```json 200
+```json
 {
-  "status": "redeemed",
-  "tx_hash": "0x4398319d0d0cf3761fec38057cbd6830451fb46ff4ebc42290cb6a4ba2d08cd6",
-  "slug": "btc-updown-15m-1773960300",
-  "won_side": "YES",
+  "status":      "redeemed",
+  "tx_hash":     "0x4398...",
+  "slug":        "btc-updown-15m-1234567890",
+  "won_side":    "YES",
   "polygonscan": "https://polygonscan.com/tx/0x4398..."
 }
 ```
 
-```json 402
-{
-  "x402Version": 1,
-  "accepts": [{
-    "scheme": "exact",
-    "network": "eip155:137",
-    "payTo": "0xSERVICE_WALLET",
-    "amount": "50000",
-    "asset": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
-  }],
-  "error": "Payment required"
-}
-```
-
-```json 403
-{
-  "detail": "Module not enabled. Call enableModule(0x...) on your Safe first."
-}
-```
-</ResponseExample>
+**Errors:** `402` payment required · `401` invalid key · `400` bad request · `502` relay failed
 
 ---
 
-# List Positions
+## GET /redeems
 
-<api>GET https://api.patly.online/positions</api>
-
-List all registered positions and their redemption status.
-
-### Headers
-
-<ParamField header="x-api-key" type="string" required>
-  Your Patly API key.
-</ParamField>
+Your full redeem history. **Requires auth.**
 
 ### Query Parameters
 
-<ParamField query="limit" type="integer" default="50">
-  Maximum number of positions to return.
-</ParamField>
+| Param | Default | Description |
+|---|---|---|
+| `limit` | 50 | Max records to return |
 
-<RequestExample>
-```bash cURL
-curl "https://api.patly.online/positions?limit=20" \
-  -H "x-api-key: YOUR_API_KEY"
-```
+### Response
 
-```python Python
-positions = patly.positions()
-for p in positions:
-    print(p["slug"], p["status"])
-```
-</RequestExample>
-
-<ResponseExample>
-```json 200
+```json
 [
   {
-    "slug": "btc-updown-15m-1773960300",
-    "won_side": "YES",
-    "status": "redeemed",
-    "tx_hash": "0x4398...",
-    "created_at": "2026-03-20T11:10:07.000000",
-    "redeemed_at": "2026-03-20T11:10:13.000000"
-  },
-  {
-    "slug": "btc-updown-15m-1773955800",
-    "won_side": "NO",
-    "status": "pending",
-    "tx_hash": null,
-    "created_at": "2026-03-20T10:30:00.000000",
-    "redeemed_at": null
+    "slug":       "btc-updown-15m-1234567890",
+    "won_side":   "YES",
+    "tx_hash":    "0x4398...",
+    "status":     "redeemed",
+    "created_at": "2026-03-20T11:10:07"
   }
 ]
 ```
-</ResponseExample>
 
 ---
 
-# Delete Account
+## GET /nonce
 
-<api>DELETE https://api.patly.online/account</api>
+Get the Safe nonce for a wallet. Used internally by the Patly library. **Requires auth.**
 
-Permanently delete your Patly account and all position records. The module will remain enabled on your Safe — disable it manually if desired.
+### Query Parameters
 
-### Headers
+| Param | Description |
+|---|---|
+| `wallet` | Wallet address |
 
-<ParamField header="x-api-key" type="string" required>
-  Your Patly API key.
-</ParamField>
+---
 
-<RequestExample>
-```bash cURL
-curl -X DELETE https://api.patly.online/account \
+## GET /condition
+
+Get the conditionId for a market slug. Used internally by the Patly library. **Requires auth.**
+
+### Query Parameters
+
+| Param | Description |
+|---|---|
+| `slug` | Market slug |
+
+---
+
+## DELETE /account
+
+Permanently delete your account and all records. **Requires auth.**
+
+```bash
+curl -X DELETE http://patly.duckdns.org/account \
   -H "x-api-key: YOUR_API_KEY"
 ```
-</RequestExample>
 
-<ResponseExample>
-```json 200
-{
-  "status": "deleted"
-}
-```
-</ResponseExample>
+```json
+{ "status": "deleted" }
+``` 

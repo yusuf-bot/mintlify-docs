@@ -1,78 +1,77 @@
 ---
 title: Quickstart
-description: Up and running in 5 minutes
+description: Up and running in 3 minutes
 ---
 
-## 1. Install the Patly library
+## 1. Connect wallet and register
+
+Go to [patly.duckdns.org](http://patly.duckdns.org), connect your MetaMask wallet, and create an account. You'll receive an API key — save it.
+
+Or via curl:
+
+```bash
+curl -X POST http://patly.duckdns.org/register \
+  -H "Content-Type: application/json" \
+  -d '{"wallet": "0xYOUR_POLYMARKET_WALLET"}'
+```
+
+```json
+{
+  "api_key": "vRkrRS5q...",
+  "wallet":  "0x...",
+  "message": "Save your API key — it won't be shown again."
+}
+```
+
+## 2. Install the library
 
 ```bash
 pip install patly
 ```
 
-## 2. Register your wallet
+## 3. Add to your bot
+
+```python
+import patly, os
+
+# Add once at startup
+patly.init(
+    api_key=os.getenv("PATLY_API_KEY"),
+    pk=os.getenv("PK"),
+)
+
+# Replace your existing redeem call — no other changes:
+patly.redeem_if_needed(slug, won, won_side=position["side"])
+```
+
+## 4. Add to .env
 
 ```bash
-curl -X POST https://api.patly.online/register \
-  -H "Content-Type: application/json" \
-  -d '{"wallet": "0xYOUR_POLYMARKET_WALLET"}'
+PATLY_API_KEY=your_api_key_here
+# PK is already in your .env from your trading bot
 ```
 
-Save the `api_key` from the response.
-
-## 3. Enable the Patly module (one-time)
-
-This grants Patly permission to redeem on your Safe. Your private key is used locally — it never leaves your machine.
-
-```python
-from patly import Patly
-
-p = Patly(api_key="YOUR_API_KEY", pk="YOUR_PRIVATE_KEY")
-p.enable_module()
-# ✅ Module enabled: 0x...
-```
+That's it. Patly handles everything else — signing, payment, relaying.
 
 <Note>
-This sends one transaction to your Polymarket Safe calling `enableModule(patly_wallet)`. 
-It requires a tiny amount of POL (~$0.001) for gas — or use the Patly dashboard to enable via Polygonscan.
+Your private key is used **only** for local cryptographic signing. It is never transmitted to Patly or any third party. Only the resulting signature is sent. This is identical to how MetaMask works.
 </Note>
 
-## 4. Add Patly to your bot
+## Direct usage (without bot integration)
 
 ```python
-# In your bot's startup
 from patly import Patly
 
-patly = Patly(api_key="YOUR_API_KEY", pk="YOUR_PRIVATE_KEY")
+p = Patly(api_key="your_key", pk="your_pk")
 
-# After each winning trade:
-patly.redeem("btc-updown-15m-1773960300", "YES")
-# ✅ Redeemed: 0x4398...  $5.00 USDC back in your wallet
+# Redeem a specific position
+result = p.redeem("btc-updown-15m-1234567890", "YES")
+print(result["tx_hash"])
+
+# Check status
+print(p.status())
+
+# View history
+for r in p.history():
+    print(r["slug"], r["status"])
 ```
-
-## Drop-in replacement
-
-If you're already using a `redeem_if_needed()` function in your bot:
-
-```python
-import patly
-
-# At startup
-patly.init(api_key="YOUR_API_KEY", pk="YOUR_PRIVATE_KEY")
-
-# This replaces your existing redeem call — same signature
-patly.redeem_if_needed(position["slug"], won, won_side=position["side"])
-```
-
-## Check status
-
-```python
-print(patly.status())
-# {"module_enabled": true, "wallet": "0x...", "ready": true}
-
-print(patly.positions())
-# [{"slug": "btc-updown-...", "status": "redeemed", "tx_hash": "0x..."}, ...]
-```
-
-## Dashboard
-
-View all your positions, metrics, and settings at [patly.online](https://patly.online).

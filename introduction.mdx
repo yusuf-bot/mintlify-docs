@@ -1,39 +1,43 @@
 ---
 title: Introduction
-description: Gasless auto-redemption for Polymarket bot operators
+description: Gasless Polymarket redemption in two lines of code
 ---
 
 # :Patly
 
-**Patly** is a Redeem-as-a-Service API for Polymarket. It automatically converts your winning conditional tokens back to USDC — gaslessly, with no code changes to your bot.
+**Patly** is a Redeem-as-a-Service API. It converts your winning Polymarket conditional tokens back to USDC — gaslessly, automatically, for $0.01 per redeem.
 
 ## The Problem
 
-Polymarket positions don't auto-redeem. After a market resolves, your winning tokens sit idle until you manually call `redeemPositions()` on-chain. Bots that don't handle this run out of trading capital.
+Polymarket positions don't auto-redeem. After a market resolves, your winning tokens sit idle until someone manually calls `redeemPositions()` on-chain. Trading bots that don't handle this run out of capital.
 
 ## The Solution
 
-Patly uses Gnosis Safe's **Module system**. You grant Patly permission once — after that, Patly can redeem on your behalf anytime, without ever touching your private key again.
+Patly relays signed redeem transactions to Polymarket's gasless Builder relayer using our Builder API credentials — a program that requires Polymarket's approval to access.
 
 ```
-You (once):    enableModule(patly_wallet) → on your Polymarket Safe
-Your bot:      POST /redeem { slug, won_side } → Patly redeems → USDC in your wallet
+Your bot signs redeemPositions() locally → POSTs to Patly → Patly relays gaslessly → USDC in your wallet
 ```
 
-## Key Properties
+## Security
 
-- **No private key storage** — Patly never sees your PK after setup
-- **Gasless** — Patly uses Polymarket's official relayer (Builder program)
-- **$0.05 per redeem** — paid via x402 (automatic in the Patly library)
-- **Instant** — redeems execute the moment you call the API
+**Your private key never leaves your machine.**
 
-## Quick Start
+The Patly library signs transactions locally using standard cryptography. Only the resulting signature is transmitted — identical to how MetaMask works. You can verify this with any network packet inspector.
+
+What Patly stores: your wallet address, tx hashes, market slugs — all public on-chain data.
+
+What Patly never sees: your private key, your seed phrase, any sensitive credentials.
+
+## Pricing
+
+**$0.01 USDC per redemption**, paid automatically via x402 (HTTP 402 payment protocol). No subscriptions, no upfront costs.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Up and running in 5 minutes
+    Up and running in 3 minutes
   </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/register">
+  <Card title="API Reference" icon="code" href="/api-reference">
     Full endpoint documentation
   </Card>
 </CardGroup>
