@@ -41,7 +41,7 @@ patly.init(
 )
 
 # Replace your existing redeem call — no other changes:
-patly.redeem_if_needed(slug, won, won_side=position["side"])
+patly.redeem(position["slug"], side)
 ```
 
 ## 4. Add to .env
