@@ -23,7 +23,7 @@ Your bot signs redeemPositions() locally → POSTs to Patly → Patly relays gas
 
 **Your private key never leaves your machine.**
 
-The Patly library signs transactions locally using standard cryptography. Only the resulting signature is transmitted — identical to how MetaMask works. You can verify this with any network packet inspector.
+The Patly library signs transactions locally using standard cryptography. Only the resulting signature is transmitted — identical to how MetaMask works. You can verify this with any network packet inspector (Wireshark, Charles Proxy).
 
 What Patly stores: your wallet address, tx hashes, market slugs — all public on-chain data.
 
@@ -31,7 +31,7 @@ What Patly never sees: your private key, your seed phrase, any sensitive credent
 
 ## Pricing
 
-**$0.01 USDC per redemption**, paid automatically via x402 (HTTP 402 payment protocol). No subscriptions, no upfront costs.
+**$0.01 USDC per redemption**, bundled atomically into the same transaction as your winning redemption. The fee comes directly from your winnings — no separate USDC balance required, no subscription, no upfront cost.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
@@ -41,3 +41,4 @@ What Patly never sees: your private key, your seed phrase, any sensitive credent
     Full endpoint documentation
   </Card>
 </CardGroup>
+

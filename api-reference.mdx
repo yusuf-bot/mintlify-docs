@@ -35,6 +35,26 @@ Register your Polymarket wallet and receive an API key. **Free.**
 
 ---
 
+## GET /info
+
+Public service info. Returns the fee wallet address used by the Patly client to build the fee transfer.
+
+### Response
+
+```json
+{
+  "service":      ":Patly",
+  "version":      "1.0.0",
+  "fee_wallet":   "0x1d17...",
+  "relay_wallet": "0xb1cb...",
+  "fee_per_call": "$0.01",
+  "network":      "Polygon (eip155:137)",
+  "fee_model":    "bundled — $0.01 USDC deducted from winnings in same tx"
+}
+```
+
+---
+
 ## GET /status
 
 Your account status and redeem stats. **Requires auth.**
@@ -60,27 +80,26 @@ Your account status and redeem stats. **Requires auth.**
 
 ## POST /redeem
 
-Relay a signed redeem transaction. **Costs $0.01 USDC via x402.**
+Relay a signed redeem transaction. **Requires auth.**
 
-The Patly library handles signing and payment automatically. If calling manually, see the x402 protocol docs.
+The Patly library builds and signs the transaction automatically. The $0.01 fee is included in the transaction itself — no separate payment step.
 
 ### Headers
 
 | Header | Description |
 |---|---|
 | `x-api-key` | Your Patly API key |
-| `X-PAYMENT` | x402 payment signature (handled by Patly library) |
 
 ### Body
 
 | Field | Type | Description |
 |---|---|---|
-| `signed_tx` | object | Safe transaction signed locally by user's PK |
+| `signed_tx` | object | Safe multisend transaction signed locally by the Patly client |
 | `slug` | string | Market slug e.g. `btc-updown-15m-1234567890` |
 | `won_side` | string | `"YES"` or `"NO"` |
 
 <Note>
-The `signed_tx` is built and signed by the Patly library on the user's machine. The private key is never transmitted — only the cryptographic signature is included.
+`signed_tx` is a Safe multisend containing two calls: `redeemPositions()` and `USDC.transfer($0.01 → Patly)`. It is built and signed by the Patly library on the user's machine. The private key is never transmitted — only the cryptographic signature.
 </Note>
 
 ### Response
@@ -95,7 +114,7 @@ The `signed_tx` is built and signed by the Patly library on the user's machine. 
 }
 ```
 
-**Errors:** `402` payment required · `401` invalid key · `400` bad request · `502` relay failed
+**Errors:** `401` invalid key · `400` bad request · `502` relay failed
 
 ---
 
@@ -149,6 +168,26 @@ Get the conditionId for a market slug. Used internally by the Patly library. **R
 
 ---
 
+## POST /recover
+
+Recover a lost API key by proving wallet ownership via a MetaMask signature.
+
+### Body
+
+| Field | Type | Description |
+|---|---|---|
+| `wallet` | string | Your wallet address |
+| `message` | string | The message you signed |
+| `signature` | string | The eth_sign signature |
+
+### Response
+
+```json
+{ "api_key": "...", "wallet": "0x..." }
+```
+
+---
+
 ## DELETE /account
 
 Permanently delete your account and all records. **Requires auth.**
@@ -160,4 +199,4 @@ curl -X DELETE http://patly.duckdns.org/account \
 
 ```json
 { "status": "deleted" }
-``` 
+```

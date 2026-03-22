@@ -1,3 +1,4 @@
+
 ---
 title: Quickstart
 description: Up and running in 3 minutes
@@ -51,11 +52,20 @@ PATLY_API_KEY=your_api_key_here
 # PK is already in your .env from your trading bot
 ```
 
-That's it. Patly handles everything else — signing, payment, relaying.
+That's it. Patly handles everything else — signing, fee, relaying.
 
 <Note>
 Your private key is used **only** for local cryptographic signing. It is never transmitted to Patly or any third party. Only the resulting signature is sent. This is identical to how MetaMask works.
 </Note>
+
+## How the fee works
+
+When you call `patly.redeem()`, the library builds a **Safe multisend transaction** containing two calls:
+
+1. `redeemPositions()` — claims your winning USDC
+2. `USDC.transfer($0.01 → Patly)` — the fee, paid from your winnings
+
+Both happen atomically in a single gasless transaction. If the redemption fails, the fee is never paid. No separate USDC balance is required.
 
 ## Direct usage (without bot integration)
 
@@ -75,3 +85,4 @@ print(p.status())
 for r in p.history():
     print(r["slug"], r["status"])
 ```
+
